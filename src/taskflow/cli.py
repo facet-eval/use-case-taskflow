@@ -7,7 +7,7 @@ import click
 
 from taskflow import __version__
 from taskflow.dates import parse_due
-from taskflow.db.connection import connect, default_db_path
+from taskflow.db.connection import connect, connect_for_write, default_db_path
 from taskflow.db.schema import apply_migrations
 from taskflow.errors import TaskflowError
 from taskflow.export import write_csv, write_json
@@ -39,7 +39,7 @@ def add_command(title: str, description: str, due: str | None) -> None:
     except TaskflowError as exc:
         raise click.ClickException(str(exc)) from exc
 
-    with connect(default_db_path()) as conn:
+    with connect_for_write(default_db_path()) as conn:
         apply_migrations(conn)
         repo = TaskRepository(conn)
         task_id = repo.add(title.strip(), description, due_at)
@@ -86,7 +86,7 @@ def list_command(status: str | None, due_before: str | None, as_json: bool) -> N
 @click.argument("task_id", type=int)
 def done_command(task_id: int) -> None:
     """Mark a task as done."""
-    with connect(default_db_path()) as conn:
+    with connect_for_write(default_db_path()) as conn:
         apply_migrations(conn)
         repo = TaskRepository(conn)
         affected = repo.mark_done(task_id)
@@ -108,7 +108,7 @@ def delete_command(task_id: int, yes: bool) -> None:
     if not yes and not click.confirm(f"Delete task {task_id}?", default=False):
         click.echo("Aborted.")
         return
-    with connect(default_db_path()) as conn:
+    with connect_for_write(default_db_path()) as conn:
         apply_migrations(conn)
         repo = TaskRepository(conn)
         affected = repo.delete(task_id)
