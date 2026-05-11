@@ -18,7 +18,7 @@ def parse_due(value: str | None) -> datetime | None:
     except ValueError as exc:
         raise InvalidDate(f"Could not parse date: {value!r}") from exc
     if parsed.tzinfo is None:
-        return parsed.replace(tzinfo=UTC)
+        parsed = parsed.replace(tzinfo=datetime.now().astimezone().tzinfo)
     return parsed.astimezone(UTC)
 
 
