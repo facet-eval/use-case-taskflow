@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 import click
 
 from taskflow import __version__
@@ -52,9 +54,28 @@ def add_command(title: str, description: str, due: str | None) -> None:
 
 
 @main.command("list")
-def list_command() -> None:
-    """List all tasks."""
+@click.option(
+    "--status",
+    type=click.Choice(["pending", "done"]),
+    default=None,
+    help="Filter by task status.",
+)
+@click.option(
+    "--due-before",
+    default=None,
+    help="Show only tasks due strictly before this ISO datetime.",
+)
+def list_command(status: str | None, due_before: str | None) -> None:
+    """List tasks, optionally filtered by status and due date."""
+    filters: dict[str, Any] = {}
+    if status:
+        filters["status"] = status
+    if due_before:
+        try:
+            filters["due_before"] = parse_due(due_before)
+        except TaskflowError as exc:
+            raise click.ClickException(str(exc)) from exc
     with connect(default_db_path()) as conn:
         apply_migrations(conn)
-        tasks = fetch_tasks(conn, {})
+        tasks = fetch_tasks(conn, filters)
     click.echo(render_table(tasks))
