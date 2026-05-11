@@ -7,6 +7,8 @@ from taskflow.dates import format_iso, now_utc, parse_due
 from taskflow.db.connection import connect, default_db_path
 from taskflow.db.schema import apply_migrations
 from taskflow.errors import TaskflowError
+from taskflow.listing import ListFilters, fetch_tasks
+from taskflow.output import render_json, render_table
 
 
 @click.group()
@@ -47,3 +49,37 @@ def add_command(title: str, description: str, due: str | None) -> None:
         task_id = cursor.lastrowid
 
     click.echo(f"Created task {task_id}: {title.strip()}")
+
+
+@main.command("list")
+@click.option(
+    "--status",
+    type=click.Choice(["pending", "done"]),
+    default=None,
+    help="Filter by task status.",
+)
+@click.option(
+    "--due-before",
+    default=None,
+    help="Show only tasks due strictly before this ISO datetime.",
+)
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help="Emit a JSON array instead of a table.",
+)
+def list_command(status: str | None, due_before: str | None, as_json: bool) -> None:
+    """List tasks, optionally filtered by status and due date."""
+    try:
+        filters = ListFilters.from_options(status, due_before)
+    except TaskflowError as exc:
+        raise click.ClickException(str(exc)) from exc
+    with connect(default_db_path()) as conn:
+        apply_migrations(conn)
+        tasks = fetch_tasks(conn, filters)
+    if as_json:
+        click.echo(render_json(tasks))
+    else:
+        click.echo(render_table(tasks))
