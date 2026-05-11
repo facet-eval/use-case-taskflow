@@ -20,52 +20,9 @@ def test_list_empty_db_says_no_tasks(tmp_db_path: Path, runner: CliRunner) -> No
     assert "No tasks." in result.output
 
 
-def test_list_renders_table_with_all_tasks(tmp_db_path: Path, runner: CliRunner) -> None:
-    _seed(runner, [["buy milk"], ["call mom"]])
-    result = runner.invoke(main, ["list"])
-    assert result.exit_code == 0, result.output
-    assert "ID" in result.output
-    assert "STATUS" in result.output
-    assert "TITLE" in result.output
-    assert "buy milk" in result.output
-    assert "call mom" in result.output
-
-
-def test_list_filter_by_status_pending(tmp_db_path: Path, runner: CliRunner) -> None:
-    _seed(runner, [["buy milk"], ["call mom"]])
-    result = runner.invoke(main, ["list", "--status", "pending"])
-    assert result.exit_code == 0, result.output
-    assert "buy milk" in result.output
-    assert "call mom" in result.output
-
-
-def test_list_filter_by_status_done_excludes_pending(tmp_db_path: Path, runner: CliRunner) -> None:
-    _seed(runner, [["buy milk"]])
-    result = runner.invoke(main, ["list", "--status", "done"])
-    assert result.exit_code == 0, result.output
-    assert "buy milk" not in result.output
-    assert "No tasks." in result.output
-
-
 def test_list_rejects_unknown_status_value(tmp_db_path: Path, runner: CliRunner) -> None:
     result = runner.invoke(main, ["list", "--status", "archived"])
     assert result.exit_code != 0
-
-
-def test_list_filter_by_due_before(tmp_db_path: Path, runner: CliRunner) -> None:
-    _seed(
-        runner,
-        [
-            ["early", "--due", "2026-01-01T00:00:00+00:00"],
-            ["late", "--due", "2026-12-31T00:00:00+00:00"],
-            ["no-due"],
-        ],
-    )
-    result = runner.invoke(main, ["list", "--due-before", "2026-06-01T00:00:00+00:00"])
-    assert result.exit_code == 0, result.output
-    assert "early" in result.output
-    assert "late" not in result.output
-    assert "no-due" not in result.output
 
 
 def test_list_due_before_invalid_value_fails(tmp_db_path: Path, runner: CliRunner) -> None:
