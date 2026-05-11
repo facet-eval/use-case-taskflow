@@ -12,3 +12,9 @@ def mark_done(conn: sqlite3.Connection, task_id: int) -> int:
         (format_iso(now_utc()), task_id),
     )
     return cursor.rowcount
+
+
+def delete(conn: sqlite3.Connection, task_id: int) -> int:
+    """Delete the task. Returns the number of rows removed (0 or 1)."""
+    cursor = conn.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+    return cursor.rowcount
