@@ -75,7 +75,7 @@ def list_command(status: str | None, due_before: str | None, as_json: bool) -> N
     with connect(default_db_path()) as conn:
         apply_migrations(conn)
         repo = TaskRepository(conn)
-        tasks = repo.fetch(filters)
+        tasks = repo.list_tasks(filters)
     if as_json:
         click.echo(render_json(tasks))
     else:
@@ -136,7 +136,7 @@ def export_command(fmt: str, output: str) -> None:
     with connect(default_db_path()) as conn:
         apply_migrations(conn)
         repo = TaskRepository(conn)
-        tasks = repo.fetch(ListFilters())
+        tasks = repo.list_tasks(ListFilters())
     if output == "-":
         if fmt == "json":
             write_json(tasks, sys.stdout)

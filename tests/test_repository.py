@@ -30,7 +30,7 @@ def test_repository_add_persists_optional_fields(repo: TaskRepository) -> None:
 def test_repository_list_returns_all_tasks(repo: TaskRepository) -> None:
     repo.add("a")
     repo.add("b")
-    tasks = repo.fetch(ListFilters())
+    tasks = repo.list_tasks(ListFilters())
     assert [t.title for t in tasks] == ["a", "b"]
 
 
@@ -38,15 +38,15 @@ def test_repository_list_filter_by_status(repo: TaskRepository) -> None:
     repo.add("a")
     repo.add("b")
     repo.mark_done(1)
-    pending = repo.fetch(ListFilters(status="pending"))
-    done = repo.fetch(ListFilters(status="done"))
+    pending = repo.list_tasks(ListFilters(status="pending"))
+    done = repo.list_tasks(ListFilters(status="done"))
     assert [t.title for t in pending] == ["b"]
     assert [t.title for t in done] == ["a"]
 
 
 def test_repository_list_filter_status_done_returns_empty(repo: TaskRepository) -> None:
     repo.add("only pending")
-    done = repo.fetch(ListFilters(status="done"))
+    done = repo.list_tasks(ListFilters(status="done"))
     assert done == []
 
 
@@ -55,5 +55,5 @@ def test_repository_list_filter_by_due_before(repo: TaskRepository) -> None:
     repo.add("late", due_at=datetime(2026, 12, 31, tzinfo=UTC))
     repo.add("no_due")
     cutoff = datetime(2026, 6, 1, tzinfo=UTC)
-    tasks = repo.fetch(ListFilters(due_before=cutoff))
+    tasks = repo.list_tasks(ListFilters(due_before=cutoff))
     assert [t.title for t in tasks] == ["early"]

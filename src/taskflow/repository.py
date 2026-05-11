@@ -32,7 +32,7 @@ class TaskRepository:
         )
         return int(cursor.lastrowid or 0)
 
-    def fetch(self, filters: ListFilters) -> list[Task]:
+    def list_tasks(self, filters: ListFilters) -> list[Task]:
         sql, params = build_query(filters)
         rows = self._conn.execute(sql, params).fetchall()
         return [_row_to_task(row) for row in rows]
