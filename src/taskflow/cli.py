@@ -10,7 +10,7 @@ from taskflow.db.connection import connect, default_db_path
 from taskflow.db.schema import apply_migrations
 from taskflow.errors import TaskflowError
 from taskflow.listing import fetch_tasks
-from taskflow.output import render_table
+from taskflow.output import render_json, render_table
 
 
 @click.group()
@@ -65,7 +65,14 @@ def add_command(title: str, description: str, due: str | None) -> None:
     default=None,
     help="Show only tasks due strictly before this ISO datetime.",
 )
-def list_command(status: str | None, due_before: str | None) -> None:
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help="Emit a JSON array instead of a table.",
+)
+def list_command(status: str | None, due_before: str | None, as_json: bool) -> None:
     """List tasks, optionally filtered by status and due date."""
     filters: dict[str, Any] = {}
     if status:
@@ -78,4 +85,7 @@ def list_command(status: str | None, due_before: str | None) -> None:
     with connect(default_db_path()) as conn:
         apply_migrations(conn)
         tasks = fetch_tasks(conn, filters)
-    click.echo(render_table(tasks))
+    if as_json:
+        click.echo(render_json(tasks))
+    else:
+        click.echo(render_table(tasks))
