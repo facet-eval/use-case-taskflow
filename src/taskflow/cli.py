@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import click
@@ -134,16 +135,21 @@ def delete_command(task_id: int, yes: bool) -> None:
 @click.option(
     "--output",
     "-o",
-    type=click.Path(dir_okay=False, writable=True),
-    required=True,
-    help="Output file path.",
+    default="-",
+    help="Output file path, or '-' for stdout (default).",
 )
 def export_command(fmt: str, output: str) -> None:
-    """Export all tasks to JSON or CSV."""
-    out_path = Path(output)
+    """Export all tasks to JSON or CSV. Writes to stdout by default."""
     with connect(default_db_path()) as conn:
         apply_migrations(conn)
         tasks = fetch_tasks(conn, ListFilters())
+    if output == "-":
+        if fmt == "json":
+            write_json(tasks, sys.stdout)
+        else:
+            write_csv(tasks, sys.stdout)
+        return
+    out_path = Path(output)
     with out_path.open("w", encoding="utf-8", newline="") as fp:
         if fmt == "json":
             write_json(tasks, fp)
