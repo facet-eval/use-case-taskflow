@@ -22,5 +22,10 @@ def apply_migrations(conn: sqlite3.Connection) -> None:
 
 def _add_priority_column_if_missing(conn: sqlite3.Connection) -> None:
     columns = {row["name"] for row in conn.execute("PRAGMA table_info(tasks)")}
-    if "priority" not in columns:
+    if "priority" in columns:
+        return
+    try:
         conn.execute("ALTER TABLE tasks ADD COLUMN priority TEXT NOT NULL DEFAULT 'medium'")
+    except sqlite3.OperationalError as exc:
+        if "duplicate column" not in str(exc).lower():
+            raise
