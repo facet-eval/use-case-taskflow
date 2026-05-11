@@ -14,10 +14,20 @@ CREATE TABLE IF NOT EXISTS tasks (
 )
 """
 
+_FTS_TABLE = """
+CREATE VIRTUAL TABLE IF NOT EXISTS tasks_fts USING fts5(
+    title,
+    description,
+    content='tasks',
+    content_rowid='id'
+)
+"""
+
 
 def apply_migrations(conn: sqlite3.Connection) -> None:
     conn.executescript(_INITIAL_SCHEMA)
     _add_priority_column_if_missing(conn)
+    _create_fts_table_if_missing(conn)
 
 
 def _add_priority_column_if_missing(conn: sqlite3.Connection) -> None:
@@ -29,3 +39,12 @@ def _add_priority_column_if_missing(conn: sqlite3.Connection) -> None:
     except sqlite3.OperationalError as exc:
         if "duplicate column" not in str(exc).lower():
             raise
+
+
+def _create_fts_table_if_missing(conn: sqlite3.Connection) -> None:
+    conn.executescript(_FTS_TABLE)
+    conn.execute(
+        "INSERT INTO tasks_fts(rowid, title, description) "
+        "SELECT id, title, description FROM tasks "
+        "WHERE id NOT IN (SELECT rowid FROM tasks_fts)"
+    )
