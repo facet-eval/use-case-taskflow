@@ -7,7 +7,7 @@ from taskflow.dates import format_iso, now_utc
 from taskflow.listing import ListFilters, build_query
 from taskflow.models import Task
 
-_BASE_COLUMNS = "id, title, description, status, due_at, created_at, completed_at"
+_BASE_COLUMNS = "id, title, description, status, due_at, created_at, completed_at, priority"
 
 
 class TaskRepository:
@@ -19,15 +19,18 @@ class TaskRepository:
         title: str,
         description: str = "",
         due_at: datetime | None = None,
+        priority: str = "medium",
     ) -> int:
         created_at = now_utc()
         cursor = self._conn.execute(
-            "INSERT INTO tasks (title, description, due_at, created_at) VALUES (?, ?, ?, ?)",
+            "INSERT INTO tasks (title, description, due_at, created_at, priority) "
+            "VALUES (?, ?, ?, ?, ?)",
             (
                 title,
                 description,
                 format_iso(due_at) if due_at else None,
                 format_iso(created_at),
+                priority,
             ),
         )
         return int(cursor.lastrowid or 0)
@@ -63,4 +66,5 @@ def _row_to_task(row: sqlite3.Row) -> Task:
         due_at=datetime.fromisoformat(row["due_at"]) if row["due_at"] else None,
         created_at=datetime.fromisoformat(row["created_at"]),
         completed_at=(datetime.fromisoformat(row["completed_at"]) if row["completed_at"] else None),
+        priority=row["priority"],
     )

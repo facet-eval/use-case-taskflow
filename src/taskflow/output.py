@@ -11,11 +11,12 @@ def render_table(tasks: Iterable[Task]) -> str:
     items = list(tasks)
     if not items:
         return "No tasks."
-    headers = ("ID", "STATUS", "DUE", "TITLE")
+    headers = ("ID", "STATUS", "PRIORITY", "DUE", "TITLE")
     rows = [
         (
             str(task.id),
             task.status,
+            task.priority,
             format_iso(task.due_at) if task.due_at else "-",
             task.title,
         )
@@ -37,6 +38,7 @@ def render_json(tasks: Iterable[Task]) -> str:
             "title": task.title,
             "description": task.description,
             "status": task.status,
+            "priority": task.priority,
             "due_at": format_iso(task.due_at) if task.due_at else None,
             "created_at": format_iso(task.created_at),
             "completed_at": (format_iso(task.completed_at) if task.completed_at else None),

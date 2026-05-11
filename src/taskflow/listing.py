@@ -6,7 +6,7 @@ from typing import Any
 
 from taskflow.dates import format_iso, parse_due
 
-_BASE_COLUMNS = "id, title, description, status, due_at, created_at, completed_at"
+_BASE_COLUMNS = "id, title, description, status, due_at, created_at, completed_at, priority"
 
 
 @dataclass(frozen=True, slots=True)

@@ -13,3 +13,4 @@ class Task:
     due_at: datetime | None
     created_at: datetime
     completed_at: datetime | None
+    priority: str
