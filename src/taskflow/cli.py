@@ -36,8 +36,7 @@ def add_command(title: str, description: str, due: str | None) -> None:
     with connect(default_db_path()) as conn:
         apply_migrations(conn)
         cursor = conn.execute(
-            "INSERT INTO tasks (title, description, due_at, created_at) "
-            "VALUES (?, ?, ?, ?)",
+            "INSERT INTO tasks (title, description, due_at, created_at) VALUES (?, ?, ?, ?)",
             (
                 title.strip(),
                 description,
