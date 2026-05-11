@@ -30,7 +30,13 @@ def main() -> None:
     default=None,
     help="Optional due date (ISO 8601 or 'YYYY-MM-DD HH:MM').",
 )
-def add_command(title: str, description: str, due: str | None) -> None:
+@click.option(
+    "--priority",
+    type=click.Choice(["low", "medium", "high"]),
+    default="medium",
+    help="Task priority. Defaults to medium.",
+)
+def add_command(title: str, description: str, due: str | None, priority: str) -> None:
     """Create a new task."""
     if not title.strip():
         raise click.UsageError("Title must not be empty.")
@@ -42,7 +48,7 @@ def add_command(title: str, description: str, due: str | None) -> None:
     with connect_for_write(default_db_path()) as conn:
         apply_migrations(conn)
         repo = TaskRepository(conn)
-        task_id = repo.add(title.strip(), description, due_at)
+        task_id = repo.add(title.strip(), description, due_at, priority)
 
     click.echo(f"Created task {task_id}: {title.strip()}")
 
@@ -60,16 +66,27 @@ def add_command(title: str, description: str, due: str | None) -> None:
     help="Show only tasks due strictly before this ISO datetime.",
 )
 @click.option(
+    "--priority",
+    type=click.Choice(["low", "medium", "high"]),
+    default=None,
+    help="Filter by task priority.",
+)
+@click.option(
     "--json",
     "as_json",
     is_flag=True,
     default=False,
     help="Emit a JSON array instead of a table.",
 )
-def list_command(status: str | None, due_before: str | None, as_json: bool) -> None:
-    """List tasks, optionally filtered by status and due date."""
+def list_command(
+    status: str | None,
+    due_before: str | None,
+    priority: str | None,
+    as_json: bool,
+) -> None:
+    """List tasks, optionally filtered by status, due date, and priority."""
     try:
-        filters = ListFilters.from_options(status, due_before)
+        filters = ListFilters.from_options(status, due_before, priority)
     except TaskflowError as exc:
         raise click.ClickException(str(exc)) from exc
     with connect(default_db_path()) as conn:
