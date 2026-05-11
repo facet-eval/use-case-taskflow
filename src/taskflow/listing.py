@@ -40,7 +40,5 @@ def _row_to_task(row: sqlite3.Row) -> Task:
         status=row["status"],
         due_at=datetime.fromisoformat(row["due_at"]) if row["due_at"] else None,
         created_at=datetime.fromisoformat(row["created_at"]),
-        completed_at=(
-            datetime.fromisoformat(row["completed_at"]) if row["completed_at"] else None
-        ),
+        completed_at=(datetime.fromisoformat(row["completed_at"]) if row["completed_at"] else None),
     )

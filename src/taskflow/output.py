@@ -39,9 +39,7 @@ def render_json(tasks: Iterable[Task]) -> str:
             "status": task.status,
             "due_at": format_iso(task.due_at) if task.due_at else None,
             "created_at": format_iso(task.created_at),
-            "completed_at": (
-                format_iso(task.completed_at) if task.completed_at else None
-            ),
+            "completed_at": (format_iso(task.completed_at) if task.completed_at else None),
         }
         for task in tasks
     ]
