@@ -14,10 +14,40 @@ CREATE TABLE IF NOT EXISTS tasks (
 )
 """
 
+_FTS_TABLE = """
+CREATE VIRTUAL TABLE IF NOT EXISTS tasks_fts USING fts5(
+    title,
+    description,
+    content='tasks',
+    content_rowid='id'
+)
+"""
+
+_FTS_TRIGGERS = """
+CREATE TRIGGER IF NOT EXISTS tasks_fts_after_insert AFTER INSERT ON tasks BEGIN
+    INSERT INTO tasks_fts(rowid, title, description)
+    VALUES (new.id, new.title, new.description);
+END;
+
+CREATE TRIGGER IF NOT EXISTS tasks_fts_after_delete AFTER DELETE ON tasks BEGIN
+    INSERT INTO tasks_fts(tasks_fts, rowid, title, description)
+    VALUES ('delete', old.id, old.title, old.description);
+END;
+
+CREATE TRIGGER IF NOT EXISTS tasks_fts_after_update AFTER UPDATE ON tasks BEGIN
+    INSERT INTO tasks_fts(tasks_fts, rowid, title, description)
+    VALUES ('delete', old.id, old.title, old.description);
+    INSERT INTO tasks_fts(rowid, title, description)
+    VALUES (new.id, new.title, new.description);
+END;
+"""
+
 
 def apply_migrations(conn: sqlite3.Connection) -> None:
     conn.executescript(_INITIAL_SCHEMA)
     _add_priority_column_if_missing(conn)
+    _create_fts_table_if_missing(conn)
+    _create_fts_triggers_if_missing(conn)
 
 
 def _add_priority_column_if_missing(conn: sqlite3.Connection) -> None:
@@ -29,3 +59,16 @@ def _add_priority_column_if_missing(conn: sqlite3.Connection) -> None:
     except sqlite3.OperationalError as exc:
         if "duplicate column" not in str(exc).lower():
             raise
+
+
+def _create_fts_table_if_missing(conn: sqlite3.Connection) -> None:
+    conn.executescript(_FTS_TABLE)
+    conn.execute(
+        "INSERT INTO tasks_fts(rowid, title, description) "
+        "SELECT id, title, description FROM tasks "
+        "WHERE id NOT IN (SELECT rowid FROM tasks_fts)"
+    )
+
+
+def _create_fts_triggers_if_missing(conn: sqlite3.Connection) -> None:
+    conn.executescript(_FTS_TRIGGERS)
