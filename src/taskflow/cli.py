@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import click
 
 from taskflow import __version__
@@ -9,6 +11,7 @@ from taskflow.db.operations import delete as delete_task
 from taskflow.db.operations import mark_done
 from taskflow.db.schema import apply_migrations
 from taskflow.errors import TaskflowError
+from taskflow.export import write_csv, write_json
 from taskflow.listing import ListFilters, fetch_tasks
 from taskflow.output import render_json, render_table
 
@@ -118,3 +121,32 @@ def delete_command(task_id: int, yes: bool) -> None:
     if affected == 0:
         raise click.ClickException(f"No task with id {task_id}.")
     click.echo(f"Deleted task {task_id}.")
+
+
+@main.command("export")
+@click.option(
+    "--format",
+    "fmt",
+    type=click.Choice(["json", "csv"]),
+    required=True,
+    help="Output format.",
+)
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(dir_okay=False, writable=True),
+    required=True,
+    help="Output file path.",
+)
+def export_command(fmt: str, output: str) -> None:
+    """Export all tasks to JSON or CSV."""
+    out_path = Path(output)
+    with connect(default_db_path()) as conn:
+        apply_migrations(conn)
+        tasks = fetch_tasks(conn, ListFilters())
+    with out_path.open("w", encoding="utf-8", newline="") as fp:
+        if fmt == "json":
+            write_json(tasks, fp)
+        else:
+            write_csv(tasks, fp)
+    click.echo(f"Exported {out_path}")
