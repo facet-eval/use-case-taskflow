@@ -5,6 +5,8 @@ import click
 from taskflow import __version__
 from taskflow.dates import format_iso, now_utc, parse_due
 from taskflow.db.connection import connect, default_db_path
+from taskflow.db.operations import delete as delete_task
+from taskflow.db.operations import mark_done
 from taskflow.db.schema import apply_migrations
 from taskflow.errors import TaskflowError
 from taskflow.listing import ListFilters, fetch_tasks
@@ -83,3 +85,36 @@ def list_command(status: str | None, due_before: str | None, as_json: bool) -> N
         click.echo(render_json(tasks))
     else:
         click.echo(render_table(tasks))
+
+
+@main.command("done")
+@click.argument("task_id", type=int)
+def done_command(task_id: int) -> None:
+    """Mark a task as done."""
+    with connect(default_db_path()) as conn:
+        apply_migrations(conn)
+        affected = mark_done(conn, task_id)
+    if affected == 0:
+        raise click.ClickException(f"No task with id {task_id}.")
+    click.echo(f"Marked task {task_id} as done.")
+
+
+@main.command("delete")
+@click.argument("task_id", type=int)
+@click.option(
+    "--yes",
+    is_flag=True,
+    default=False,
+    help="Skip the confirmation prompt (useful for scripts).",
+)
+def delete_command(task_id: int, yes: bool) -> None:
+    """Delete a task."""
+    if not yes and not click.confirm(f"Delete task {task_id}?", default=False):
+        click.echo("Aborted.")
+        return
+    with connect(default_db_path()) as conn:
+        apply_migrations(conn)
+        affected = delete_task(conn, task_id)
+    if affected == 0:
+        raise click.ClickException(f"No task with id {task_id}.")
+    click.echo(f"Deleted task {task_id}.")
