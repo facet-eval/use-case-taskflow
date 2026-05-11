@@ -7,6 +7,8 @@ from taskflow.dates import format_iso, now_utc, parse_due
 from taskflow.db.connection import connect, default_db_path
 from taskflow.db.schema import apply_migrations
 from taskflow.errors import TaskflowError
+from taskflow.listing import fetch_tasks
+from taskflow.output import render_table
 
 
 @click.group()
@@ -47,3 +49,12 @@ def add_command(title: str, description: str, due: str | None) -> None:
         task_id = cursor.lastrowid
 
     click.echo(f"Created task {task_id}: {title.strip()}")
+
+
+@main.command("list")
+def list_command() -> None:
+    """List all tasks."""
+    with connect(default_db_path()) as conn:
+        apply_migrations(conn)
+        tasks = fetch_tasks(conn, {})
+    click.echo(render_table(tasks))
