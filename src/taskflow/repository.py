@@ -56,6 +56,19 @@ class TaskRepository:
         cursor = self._conn.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
         return cursor.rowcount
 
+    def search(self, query: str, limit: int = 50) -> list[Task]:
+        sql = (
+            "SELECT t.id, t.title, t.description, t.status, "
+            "t.due_at, t.created_at, t.completed_at, t.priority "
+            "FROM tasks t "
+            "JOIN tasks_fts f ON t.id = f.rowid "
+            "WHERE tasks_fts MATCH ? "
+            "ORDER BY bm25(tasks_fts) "
+            "LIMIT ?"
+        )
+        rows = self._conn.execute(sql, (query, limit)).fetchall()
+        return [_row_to_task(row) for row in rows]
+
 
 def _row_to_task(row: sqlite3.Row) -> Task:
     return Task(
