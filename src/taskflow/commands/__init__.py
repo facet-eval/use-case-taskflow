@@ -6,4 +6,4 @@ which attaches the subcommand to the root ``click.group`` defined in
 side-effects.
 """
 
-from taskflow.commands import add  # noqa: F401
+from taskflow.commands import add, list_  # noqa: F401
