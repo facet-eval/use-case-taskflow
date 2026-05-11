@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Any
-
 import click
 
 from taskflow import __version__
@@ -9,7 +7,7 @@ from taskflow.dates import format_iso, now_utc, parse_due
 from taskflow.db.connection import connect, default_db_path
 from taskflow.db.schema import apply_migrations
 from taskflow.errors import TaskflowError
-from taskflow.listing import fetch_tasks
+from taskflow.listing import ListFilters, fetch_tasks
 from taskflow.output import render_json, render_table
 
 
@@ -74,14 +72,10 @@ def add_command(title: str, description: str, due: str | None) -> None:
 )
 def list_command(status: str | None, due_before: str | None, as_json: bool) -> None:
     """List tasks, optionally filtered by status and due date."""
-    filters: dict[str, Any] = {}
-    if status:
-        filters["status"] = status
-    if due_before:
-        try:
-            filters["due_before"] = parse_due(due_before)
-        except TaskflowError as exc:
-            raise click.ClickException(str(exc)) from exc
+    try:
+        filters = ListFilters.from_options(status, due_before)
+    except TaskflowError as exc:
+        raise click.ClickException(str(exc)) from exc
     with connect(default_db_path()) as conn:
         apply_migrations(conn)
         tasks = fetch_tasks(conn, filters)
