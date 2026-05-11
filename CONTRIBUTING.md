@@ -67,11 +67,13 @@ Feature requests use `.github/ISSUE_TEMPLATE/feature_request.md`. A good feature
 
 ## Reviews
 
-Reviews are substantive. **LGTM-only comments are forbidden — silence is preferred over filler.** When you review:
+Reviews are substantive. **LGTM-only comments are forbidden — silence is preferred over filler.** A review comment must do one of three things:
 
 - Request a concrete change when something is wrong.
 - Ask a clarifying question when intent is unclear.
-- Stay silent when the change is straightforward and correct. The merge action is the approval signal.
+- Acknowledge when there is something specific worth acknowledging — never just "looks good".
+
+If none of those apply, do not comment. The merge action is the approval signal.
 
 Self-approval is blocked by GitHub. That is fine: a merge by the author after a substantive review thread (or after silent agreement) is the canonical approval here.
 
