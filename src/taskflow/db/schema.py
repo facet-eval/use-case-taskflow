@@ -33,6 +33,13 @@ CREATE TRIGGER IF NOT EXISTS tasks_fts_after_delete AFTER DELETE ON tasks BEGIN
     INSERT INTO tasks_fts(tasks_fts, rowid, title, description)
     VALUES ('delete', old.id, old.title, old.description);
 END;
+
+CREATE TRIGGER IF NOT EXISTS tasks_fts_after_update AFTER UPDATE ON tasks BEGIN
+    INSERT INTO tasks_fts(tasks_fts, rowid, title, description)
+    VALUES ('delete', old.id, old.title, old.description);
+    INSERT INTO tasks_fts(rowid, title, description)
+    VALUES (new.id, new.title, new.description);
+END;
 """
 
 

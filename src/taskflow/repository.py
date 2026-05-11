@@ -57,6 +57,10 @@ class TaskRepository:
         return cursor.rowcount
 
     def search(self, query: str, limit: int = 50) -> list[Task]:
+        if not query.strip():
+            from taskflow.errors import InvalidQuery
+
+            raise InvalidQuery("Search query must not be empty.")
         sql = (
             "SELECT t.id, t.title, t.description, t.status, "
             "t.due_at, t.created_at, t.completed_at, t.priority "

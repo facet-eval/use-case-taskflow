@@ -5,6 +5,7 @@ import click
 from taskflow.cli import main
 from taskflow.db.connection import connect, default_db_path
 from taskflow.db.schema import apply_migrations
+from taskflow.errors import TaskflowError
 from taskflow.output import render_json, render_table
 from taskflow.repository import TaskRepository
 
@@ -29,7 +30,10 @@ def search_command(query: str, limit: int, as_json: bool) -> None:
     with connect(default_db_path()) as conn:
         apply_migrations(conn)
         repo = TaskRepository(conn)
-        tasks = repo.search(query, limit)
+        try:
+            tasks = repo.search(query, limit)
+        except TaskflowError as exc:
+            raise click.ClickException(str(exc)) from exc
     if as_json:
         click.echo(render_json(tasks))
     else:

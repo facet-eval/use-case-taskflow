@@ -57,3 +57,18 @@ def test_search_no_match_returns_empty_message(tmp_db_path: Path, runner: CliRun
     json_result = runner.invoke(main, ["search", "xyzzy", "--json"])
     assert json_result.exit_code == 0, json_result.output
     assert json.loads(json_result.output) == []
+
+
+def test_search_empty_query_rejects(tmp_db_path: Path, runner: CliRunner) -> None:
+    _seed(runner, [["buy milk"]])
+    result = runner.invoke(main, ["search", ""])
+    assert result.exit_code != 0
+    assert "Search query must not be empty" in result.output
+
+
+def test_search_update_trigger_reindexes(repo: TaskRepository) -> None:
+    repo.add("buy milk")
+    assert [t.title for t in repo.search("milk")] == ["buy milk"]
+    repo._conn.execute("UPDATE tasks SET title = ? WHERE id = ?", ("call mom", 1))
+    assert [t.title for t in repo.search("mom")] == ["call mom"]
+    assert repo.search("milk") == []
