@@ -6,15 +6,14 @@ from pathlib import Path
 import click
 
 from taskflow import __version__
-from taskflow.dates import format_iso, now_utc, parse_due
+from taskflow.dates import parse_due
 from taskflow.db.connection import connect, default_db_path
-from taskflow.db.operations import delete as delete_task
-from taskflow.db.operations import mark_done
 from taskflow.db.schema import apply_migrations
 from taskflow.errors import TaskflowError
 from taskflow.export import write_csv, write_json
-from taskflow.listing import ListFilters, fetch_tasks
+from taskflow.listing import ListFilters
 from taskflow.output import render_json, render_table
+from taskflow.repository import TaskRepository
 
 
 @click.group()
@@ -40,19 +39,10 @@ def add_command(title: str, description: str, due: str | None) -> None:
     except TaskflowError as exc:
         raise click.ClickException(str(exc)) from exc
 
-    created_at = now_utc()
     with connect(default_db_path()) as conn:
         apply_migrations(conn)
-        cursor = conn.execute(
-            "INSERT INTO tasks (title, description, due_at, created_at) VALUES (?, ?, ?, ?)",
-            (
-                title.strip(),
-                description,
-                format_iso(due_at) if due_at else None,
-                format_iso(created_at),
-            ),
-        )
-        task_id = cursor.lastrowid
+        repo = TaskRepository(conn)
+        task_id = repo.add(title.strip(), description, due_at)
 
     click.echo(f"Created task {task_id}: {title.strip()}")
 
@@ -84,7 +74,8 @@ def list_command(status: str | None, due_before: str | None, as_json: bool) -> N
         raise click.ClickException(str(exc)) from exc
     with connect(default_db_path()) as conn:
         apply_migrations(conn)
-        tasks = fetch_tasks(conn, filters)
+        repo = TaskRepository(conn)
+        tasks = repo.fetch(filters)
     if as_json:
         click.echo(render_json(tasks))
     else:
@@ -97,7 +88,8 @@ def done_command(task_id: int) -> None:
     """Mark a task as done."""
     with connect(default_db_path()) as conn:
         apply_migrations(conn)
-        affected = mark_done(conn, task_id)
+        repo = TaskRepository(conn)
+        affected = repo.mark_done(task_id)
     if affected == 0:
         raise click.ClickException(f"No task with id {task_id}.")
     click.echo(f"Marked task {task_id} as done.")
@@ -118,7 +110,8 @@ def delete_command(task_id: int, yes: bool) -> None:
         return
     with connect(default_db_path()) as conn:
         apply_migrations(conn)
-        affected = delete_task(conn, task_id)
+        repo = TaskRepository(conn)
+        affected = repo.delete(task_id)
     if affected == 0:
         raise click.ClickException(f"No task with id {task_id}.")
     click.echo(f"Deleted task {task_id}.")
@@ -142,7 +135,8 @@ def export_command(fmt: str, output: str) -> None:
     """Export all tasks to JSON or CSV. Writes to stdout by default."""
     with connect(default_db_path()) as conn:
         apply_migrations(conn)
-        tasks = fetch_tasks(conn, ListFilters())
+        repo = TaskRepository(conn)
+        tasks = repo.fetch(ListFilters())
     if output == "-":
         if fmt == "json":
             write_json(tasks, sys.stdout)
